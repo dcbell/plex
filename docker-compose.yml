@@ -419,5 +419,5 @@ networks:
   default:
     name: docker-compose-nas
   proxy_internal:
-    driver: bridge
-    
+    name: docker-compose-nas_proxy_internal
+    driver: bridge   
