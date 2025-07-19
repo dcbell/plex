@@ -361,6 +361,10 @@ services:
       - traefik.http.routers.homarr.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/`))
       - traefik.http.routers.homarr.tls=true
       - traefik.http.routers.homarr.tls.certresolver=myresolver
+      - traefik.http.routers.homarr.entrypoints=web-secure
+      - traefik.http.routers.homarr.middlewares=homarr-headers
+      - traefik.http.middlewares.homarr-headers.headers.customrequestheaders.Connection=Upgrade
+      - traefik.http.middlewares.homarr-headers.headers.customrequestheaders.Upgrade=websocket
       - traefik.http.services.homarr.loadbalancer.server.port=7575
   watchtower:
     image: containrrr/watchtower
