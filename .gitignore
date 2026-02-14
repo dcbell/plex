@@ -1,0 +1,13 @@
+# Ignore everything by default
+*
+
+# Allow folder traversal
+!*/
+
+# Allowed files
+!.gitignore
+!README.MD
+!docker-compose.yml
+!env.example
+!gluetun_config.toml
+!/gluetun-status.app.py

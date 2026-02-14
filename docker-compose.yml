@@ -1,0 +1,588 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    environment:
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
+      - CLOUDFLARE_ZONE_API_TOKEN=${CLOUDFLARE_ZONE_API_TOKEN}
+      - LETS_ENCRYPT_EMAIL=${LETS_ENCRYPT_EMAIL}
+    command:
+      - --ping=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web-secure.address=:443
+      - --entrypoints.web.http.redirections.entryPoint.to=web-secure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --experimental.plugins.rewrite-body.modulename=github.com/packruler/rewrite-body
+      - --experimental.plugins.rewrite-body.version=v1.2.0
+      - --experimental.plugins.rewriteHeaders.modulename=github.com/XciD/traefik-plugin-rewrite-headers
+      - --experimental.plugins.rewriteHeaders.version=v0.0.3
+      - --certificatesresolvers.myresolver.acme.dnschallenge=${DNS_CHALLENGE:-true}
+      - --certificatesresolvers.myresolver.acme.dnschallenge.provider=${DNS_CHALLENGE_PROVIDER:-cloudflare}
+      - --certificatesresolvers.myresolver.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+      - --certificatesresolvers.myresolver.acme.caserver=${LETS_ENCRYPT_CA_SERVER:-https://acme-v02.api.letsencrypt.org/directory}
+      - --certificatesresolvers.myresolver.acme.email=${LETS_ENCRYPT_EMAIL}
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+#      - --log.level=DEBUG
+#      - --log.format=common
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - default
+      - proxy_internal
+    volumes:
+      - ${CONFIG_ROOT:-.}/letsencrypt:/letsencrypt
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    healthcheck:
+      test: [ "CMD", "traefik", "healthcheck", "--ping" ]
+      interval: 30s
+      retries: 10
+  sonarr:
+    image: lscr.io/linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT:-.}/sonarr:/config
+      - ${DATA_ROOT}:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:8989/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sonarr.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/sonarr`))
+      - traefik.http.routers.sonarr.entrypoints=web-secure
+      - traefik.http.routers.sonarr.tls=true
+      - traefik.http.routers.sonarr.tls.certresolver=myresolver
+      - traefik.http.services.sonarr.loadbalancer.server.port=8989
+      - traefik.docker.network=proxy_internal
+  radarr:
+    image: lscr.io/linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT:-.}/radarr:/config
+      - ${DATA_ROOT}:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:7878/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/radarr`))
+      - traefik.http.routers.radarr.entrypoints=web-secure
+      - traefik.http.routers.radarr.tls=true
+      - traefik.http.routers.radarr.tls.certresolver=myresolver
+      - traefik.http.services.radarr.loadbalancer.server.port=7878
+      - traefik.docker.network=proxy_internal
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:v1.5.3-ls328
+    container_name: bazarr
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT:-.}/bazarr/config:/config
+      - ${DATA_ROOT}:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:6767/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.bazarr.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/bazarr`))
+      - traefik.http.routers.bazarr.entrypoints=web-secure
+      - traefik.http.routers.bazarr.tls=true
+      - traefik.http.routers.bazarr.tls.certresolver=myresolver
+      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+      - traefik.docker.network=proxy_internal
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:develop
+    container_name: overseerr
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT}/overseerr:/config
+    networks:
+      - default
+      - proxy_internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.overseerr.rule=Host(`${OVERSEERR_URL}`)
+      - traefik.http.routers.overseerr.entrypoints=web-secure
+      - traefik.http.routers.overseerr.tls=true
+      - traefik.http.routers.overseerr.tls.certresolver=myresolver
+      - traefik.http.services.overseerr.loadbalancer.server.port=5055
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 5 http://127.0.0.1:5055/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT:-.}/prowlarr:/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:9696/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prowlarr.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/prowlarr`))
+      - traefik.http.routers.prowlarr.entrypoints=web-secure
+      - traefik.http.routers.prowlarr.tls=true
+      - traefik.http.routers.prowlarr.tls.certresolver=myresolver
+      - traefik.http.services.prowlarr.loadbalancer.server.port=9696
+      - traefik.docker.network=proxy_internal
+  profilarr:
+    image: santiagosayshey/profilarr:latest
+    container_name: profilarr
+    network_mode: "service:vpn"
+    volumes:
+      - ${CONFIG_ROOT:-.}/profilarr:/config
+    environment:
+      - TZ=${TIMEZONE}
+    depends_on:
+      vpn:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "wget -qO- http://127.0.0.1:9999/ >/dev/null && wget -qO- http://127.0.0.1:6868/ >/dev/null || exit 1"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.profilarr.rule=Host(`${PROFILARR_URL}`)
+      - traefik.http.routers.profilarr.entrypoints=web-secure
+      - traefik.http.routers.profilarr.tls=true
+      - traefik.http.routers.profilarr.tls.certresolver=myresolver
+      - traefik.http.services.profilarr.loadbalancer.server.port=6868
+      - traefik.docker.network=proxy_internal
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=${TIMEZONE}
+    network_mode: "service:vpn"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:8191/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.flaresolverr.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/flaresolverr`))
+      - traefik.http.routers.flaresolverr.entrypoints=web-secure
+      - traefik.http.routers.flaresolverr.tls=true
+      - traefik.http.routers.flaresolverr.tls.certresolver=myresolver
+      - traefik.http.services.flaresolverr.loadbalancer.server.port=8191
+      - traefik.docker.network=proxy_internal
+    profiles:
+      - flaresolverr
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:libtorrentv1
+    container_name: qbittorrent
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+      - WEBUI_PORT=8081
+      - DOCKER_MODS=ghcr.io/t-anc/gsp-qbittorent-gluetun-sync-port-mod:main
+      - GSP_GTN_API_KEY=${GSP_GTN_API_KEY}
+    volumes:
+      - ${CONFIG_ROOT:-.}/qbittorrent:/config
+      - ${DOWNLOAD_ROOT}:/data/torrents
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:8081/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.qbittorrent.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/qbittorrent`))
+      - traefik.http.routers.qbittorrent.entrypoints=web-secure
+      - traefik.http.routers.qbittorrent.tls=true
+      - traefik.http.routers.qbittorrent.tls.certresolver=myresolver
+      - traefik.http.services.qbittorrent.loadbalancer.server.port=8081
+      - traefik.http.routers.qbittorrent.middlewares=qbittorrent-strip-slash,qbittorrent-stripprefix
+      - traefik.http.middlewares.qbittorrent-stripprefix.stripPrefix.prefixes=/qbittorrent
+      - traefik.http.middlewares.qbittorrent-strip-slash.redirectregex.regex=(^.*\/qbittorrent$$)
+      - traefik.http.middlewares.qbittorrent-strip-slash.redirectregex.replacement=$$1/
+      - traefik.http.middlewares.qbittorrent-strip-slash.redirectregex.permanent=false
+      - traefik.docker.network=proxy_internal
+  vpn:
+    image: qmcgaw/gluetun
+    container_name: vpn
+    volumes:
+      - ${CONFIG_ROOT:-.}/gluetun:/gluetun
+      - ${CONFIG_ROOT:-.}/gluetun_config.toml:/gluetun/auth/config.toml:ro
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - proxy_internal
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PUBLIC_KEY=${VPN_PUBLIC_KEY}
+      - WIREGUARD_PRIVATE_KEY=${VPN_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${VPN_LAN}
+      - SERVER_COUNTRIES=United States
+      - PORT_FORWARD_ONLY=on
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_PROVIDER=${VPN_PORT_FORWARDING_PROVIDER}
+      - TZ=${TIMEZONE}
+      - UPDATER_PERIOD=24h
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/gluetun-entrypoint healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  unpackerr:
+    image: golift/unpackerr
+    container_name: unpackerr
+    volumes:
+      - ${DOWNLOAD_ROOT}:/data/torrents
+    restart: unless-stopped
+    user: ${USER_ID}:${GROUP_ID}
+    networks:
+      - proxy_internal
+    environment:
+      - TZ=${TIMEZONE}
+      - UN_SONARR_0_URL=http://vpn:8989/sonarr
+      - UN_SONARR_0_API_KEY=${SONARR_API_KEY}
+      - UN_RADARR_0_URL=http://vpn:7878/radarr
+      - UN_RADARR_0_API_KEY=${RADARR_API_KEY}
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "/unpackerr", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${CONFIG_ROOT:-.}/sabnzbd:/config
+      - ${DATA_ROOT}:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -fsS http://127.0.0.1:9999/ --max-time 10 --connect-timeout 5 >/dev/null && curl -fsS http://127.0.0.1:8080/ --max-time 10 --connect-timeout 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sabnzbd.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/sabnzbd`))
+      - traefik.http.routers.sabnzbd.entrypoints=web-secure
+      - traefik.http.routers.sabnzbd.tls=true
+      - traefik.http.routers.sabnzbd.tls.certresolver=myresolver
+      - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
+      - traefik.docker.network=proxy_internal
+    profiles:
+      - sabnzbd
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - default
+      - proxy_internal
+    ports:
+      - "32400:32400"
+    environment:
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+      - TZ=${TIMEZONE}
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    volumes:
+      - ${CONFIG_ROOT:-.}/plex:/config
+      - ${DATA_ROOT}/media/tv:/tv
+      - ${DATA_ROOT}/media/movies:/movies
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 5 http://127.0.0.1:32400/identity >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.plex.rule=Host(`${PLEX_URL}`)
+      - traefik.http.routers.plex.entrypoints=web-secure
+      - traefik.http.routers.plex.tls=true
+      - traefik.http.routers.plex.tls.certresolver=myresolver
+      - traefik.http.services.plex.loadbalancer.server.port=32400
+  homarr:
+    container_name: homarr
+    image: ghcr.io/homarr-labs/homarr:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Optional, only if you want docker integration
+      - ${DATA_ROOT}/homarr:/appdata
+    environment:
+      - BASE_URL=${HOSTNAME}
+      - SECRET_ENCRYPTION_KEY=${HOMARR_ENCRYPTION}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const req=http.get('http://127.0.0.1:7575/',res=>process.exit(res.statusCode<500?0:1));req.on('error',()=>process.exit(1));req.setTimeout(3000,()=>{req.destroy();process.exit(1);});"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homarr.rule=Host(`${HOMARR_URL}`)
+      - traefik.http.routers.homarr.tls=true
+      - traefik.http.routers.homarr.tls.certresolver=myresolver
+      - traefik.http.routers.homarr.entrypoints=web-secure
+      - traefik.http.routers.homarr.middlewares=homarr-headers
+      - traefik.http.middlewares.homarr-headers.headers.customrequestheaders.Connection=Upgrade
+      - traefik.http.middlewares.homarr-headers.headers.customrequestheaders.Upgrade=websocket
+      - traefik.http.services.homarr.loadbalancer.server.port=7575
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  dash:
+    image: mauricenino/dashdot:nvidia
+    container_name: dash
+    restart: unless-stopped
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - /:/mnt/host:ro
+    ports:
+      - '4567:3001'
+    environment:
+      DASHDOT_WIDGET_LIST: 'os,cpu,storage,ram,network,gpu'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 3 http://127.0.0.1:3001/info >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    ports:
+      - 13378:80
+    volumes:
+      - ${DATA_ROOT}/abs/audiobooks:/audiobooks
+      - ${DATA_ROOT}/abs/podcasts:/podcasts
+      - ${DATA_ROOT}/abs/config:/config
+      - ${DATA_ROOT}/abs/metadata:/metadata
+    environment:
+      - TZ=${TIMEZONE}
+  seedboxapi:
+    container_name: seedboxapi
+    image: myanonamouse/seedboxapi
+    depends_on:
+      vpn:
+        condition: service_healthy
+    restart: unless-stopped
+    network_mode: "service:vpn"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z -w5 8.8.8.8 53 && nc -z -w5 1.1.1.1 80"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 40s
+    volumes:
+      - ${CONFIG_ROOT}/mam:/config
+    environment:
+      - DEBUG=1
+      - mam_id=${MAM_ID}
+      - PUID=${USER_ID}
+      - PGID=${GROUP_ID}
+  dispatcharr:
+    image: ghcr.io/dispatcharr/dispatcharr:latest
+    container_name: dispatcharr
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - TZ=${TIMEZONE}
+      - DISPATCHARR_ENV=aio
+      - REDIS_HOST=localhost
+      - CELERY_BROKER_URL=redis://localhost:6379/0
+      - DISPATCHARR_LOG_LEVEL=info
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    volumes:
+      - ${CONFIG_ROOT}/dispatcharr:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 10 --connect-timeout 5 http://127.0.0.1:9999/ >/dev/null && curl -fsS --max-time 10 --connect-timeout 5 http://127.0.0.1:9191/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy_internal
+      - traefik.http.services.dispatcharr-svc.loadbalancer.server.port=9191
+      - traefik.http.routers.dispatcharr.rule=Host(`${DISPATCHARR_URL}`)
+      - traefik.http.routers.dispatcharr.entrypoints=web-secure
+      - traefik.http.routers.dispatcharr.tls=true
+      - traefik.http.routers.dispatcharr.tls.certresolver=myresolver
+      - traefik.http.routers.dispatcharr.service=dispatcharr-svc
+  gluetun_status:
+    image: python:3.12-alpine
+    container_name: gluetun_status
+    restart: unless-stopped
+    environment:
+      - GLUETUN_BASE=http://vpn:8000
+      - GEO_LOOKUP=ip-api   # uses ip-api.com for location fallback
+      - CACHE_SECONDS=15
+      - TZ=${TIMEZONE}
+    command: >
+      sh -lc "
+        set -eux;
+        python -V;
+        ls -la /app;
+        pip install --no-cache-dir flask requests;
+        python /app/app.py
+      "
+    volumes:
+      - ${CONFIG_ROOT}/gluetun-status:/app:ro
+    depends_on:
+      vpn:
+        condition: service_healthy
+    networks:
+      - proxy_internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy_internal
+      - traefik.http.routers.gluetun-status.rule=(Host(`${HOSTNAME}`) && PathPrefix(`/gluetun`))
+      - traefik.http.routers.gluetun-status.entrypoints=web-secure
+      - traefik.http.routers.gluetun-status.tls=true
+      - traefik.http.routers.gluetun-status.tls.certresolver=myresolver
+      - traefik.http.middlewares.gluetun-status-strip.stripprefix.prefixes=/gluetun
+      - traefik.http.routers.gluetun-status.middlewares=gluetun-status-strip
+      - traefik.http.services.gluetun-status.loadbalancer.server.port=5000
+
+networks:
+  default:
+    name: docker-compose-nas
+  proxy_internal:
+    name: docker-compose-nas_proxy_internal
+    driver: bridge
