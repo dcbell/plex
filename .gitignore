@@ -10,7 +10,7 @@
 !docker-compose.yml
 !env.example
 !gluetun-sync-port-mod/
-!gluetun-sync-port-mod/gluetun_config.toml
+!gluetun-sync-port-mod/gluetun_config.toml.example
 !gluetun-status/
 !gluetun-status/app.py
 

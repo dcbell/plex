@@ -1,0 +1,14 @@
+[[roles]]
+name = "t-anc/GSP-Qbittorent-Gluetun-sync-port-mod"
+routes = ["GET /v1/portforward"]
+auth = "apikey"
+apikey = "" #https://github.com/t-anc/GSP-Qbittorent-Gluetun-sync-port-mod
+
+[[roles]]
+name = "statuspage"
+routes = [
+  "GET /v1/vpn/status",
+  "GET /v1/publicip/ip",
+  "GET /v1/portforward"
+]
+auth = "none"
