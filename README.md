@@ -6,7 +6,7 @@ I may try to work on the traefik routes later to get them all into paths.
 
 ## Gluetun Status Monitor
 
-the gluetun_status service uses ./gluetun-status/app.py and runs a small flask app to get status info and build a simple webpage. You can insert this as an iframe on Homarr to see your VPN status.
+the gluetun_status service uses `./gluetun-status/app.py` and runs a small flask app to get status info and build a simple webpage. You can insert this as an iframe on Homarr to see your VPN status.
 
 <img width="432" height="288" alt="image" src="https://github.com/user-attachments/assets/49fad116-798b-457c-b57e-6ba94325611a" />
 
