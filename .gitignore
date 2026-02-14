@@ -6,8 +6,13 @@
 
 # Allowed files
 !.gitignore
-!README.MD
+!README.md
 !docker-compose.yml
 !env.example
-!gluetun_config.toml
-!/gluetun-status.app.py
+!gluetun-sync-port-mod/
+!gluetun-sync-port-mod/gluetun_config.toml
+!gluetun-status/
+!gluetun-status/app.py
+
+# sub-git ignore
+profilarr/db/

@@ -285,8 +285,8 @@ services:
     image: qmcgaw/gluetun
     container_name: vpn
     volumes:
-      - ${CONFIG_ROOT:-.}/gluetun:/gluetun
-      - ${CONFIG_ROOT:-.}/gluetun_config.toml:/gluetun/auth/config.toml:ro
+      - ${CONFIG_ROOT}/gluetun:/gluetun
+      - ${CONFIG_ROOT}/gluetun-sync-port-mod/gluetun_config.toml:/gluetun/auth/config.toml:ro
     cap_add:
       - NET_ADMIN
     networks:
