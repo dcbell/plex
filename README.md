@@ -4,6 +4,14 @@ Access is all routed through traefik. This includes both subdomains and paths. S
 
 I may try to work on the traefik routes later to get them all into paths.
 
+## Gluetun Port Forwarding Sync
+
+To sync port forwarding from Gluetun to qbittorrent, the GSP=Qbittorrent-Gluetun-sync-port-mod is used (https://github.com/t-anc/GSP-Qbittorent-Gluetun-sync-port-mod).
+
+1. Move `gluetun-sync-port-mod/gluetun_config.toml.example` to `gluetun-sync-port-mod/gluetun_config.toml`
+2. Generate a key with `openssl rand -base64 50` and then put that key in two places:
+3. Place that key in `gluetun-sync-port-mod\gluetun_config.toml` and also in `.env`.
+
 ## Gluetun Status Monitor
 
 the gluetun_status service uses `./gluetun-status/app.py` and runs a small flask app to get status info and build a simple webpage. You can insert this as an iframe on Homarr to see your VPN status.
