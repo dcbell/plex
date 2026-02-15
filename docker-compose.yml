@@ -579,6 +579,24 @@ services:
       - traefik.http.middlewares.gluetun-status-strip.stripprefix.prefixes=/gluetun
       - traefik.http.routers.gluetun-status.middlewares=gluetun-status-strip
       - traefik.http.services.gluetun-status.loadbalancer.server.port=5000
+  agregarr:
+    image: agregarr/agregarr:latest
+    container_name: agregarr
+    volumes:
+      - ${CONFIG_ROOT}/agregarr:/app/config # Change /path/to/config to your actual config path
+      - ${DATA_ROOT}/placeholder/movies:/data/movies
+      - ${DATA_ROOT}/placeholder/tv:/data/tv
+    environment:
+      - TZ=${TIMEZONE}
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.agregarr.rule=Host(`${AGREGARR_URL}`)
+      - traefik.http.routers.agregarr.entrypoints=web-secure
+      - traefik.http.routers.agregarr.tls=true
+      - traefik.http.routers.agregarr.tls.certresolver=myresolver
+      - traefik.http.services.agregarr.loadbalancer.server.port=7171
+      - traefik.docker.network=proxy_internal
 
 networks:
   default:
