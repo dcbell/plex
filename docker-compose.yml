@@ -588,6 +588,12 @@ services:
       - ${DATA_ROOT}/placeholder/tv:/data/tv
     environment:
       - TZ=${TIMEZONE}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 5 http://127.0.0.1:7171/status | grep -q '\"version\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     labels:
       - traefik.enable=true
