@@ -176,8 +176,7 @@ services:
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.seerr.rule=Host(`${SEERR_URL}`)
-      - traefik.http.routers.seerr.rule=Host(`${OVERSEERR_URL}`)
+      - traefik.http.routers.seerr.rule=Host(`${SEERR_URL}`) || Host(`${OVERSEERR_URL}`)
       - traefik.http.routers.seerr.entrypoints=web-secure
       - traefik.http.routers.seerr.tls=true
       - traefik.http.routers.seerr.tls.certresolver=myresolver
