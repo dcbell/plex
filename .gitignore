@@ -13,6 +13,8 @@
 !gluetun-sync-port-mod/gluetun_config.toml.example
 !gluetun-status/
 !gluetun-status/app.py
+!images/
+!images/*
 
 # sub-git ignore
 profilarr/db/
