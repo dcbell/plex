@@ -487,8 +487,6 @@ services:
               capabilities: [gpu]
     volumes:
       - /:/mnt/host:ro
-    ports:
-      - '4567:3001'
     environment:
       DASHDOT_WIDGET_LIST: 'os,cpu,storage,ram,network,gpu'
     healthcheck:
@@ -497,12 +495,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dash.rule=Host(`${DASH_URL}`)
+      - traefik.http.routers.dash.entrypoints=web-secure
+      - traefik.http.routers.dash.tls=true
+      - traefik.http.routers.dash.tls.certresolver=myresolver
+      - traefik.http.services.dash.loadbalancer.server.port=3001
   audiobookshelf:
     image: ghcr.io/advplyr/audiobookshelf:latest
     container_name: audiobookshelf
     restart: unless-stopped
-    ports:
-      - 13378:80
     volumes:
       - ${DATA_ROOT}/abs/audiobooks:/audiobooks
       - ${DATA_ROOT}/abs/podcasts:/podcasts
@@ -510,6 +513,13 @@ services:
       - ${DATA_ROOT}/abs/metadata:/metadata
     environment:
       - TZ=${TIMEZONE}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.abs.rule=Host(`${ABS_URL}`)
+      - traefik.http.routers.abs.entrypoints=web-secure
+      - traefik.http.routers.abs.tls=true
+      - traefik.http.routers.abs.tls.certresolver=myresolver
+      - traefik.http.services.abs.loadbalancer.server.port=80
   seedboxapi:
     container_name: seedboxapi
     image: myanonamouse/seedboxapi
