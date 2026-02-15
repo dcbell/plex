@@ -16,7 +16,7 @@ To sync port forwarding from Gluetun to qbittorrent, the GSP=Qbittorrent-Gluetun
 
 the gluetun_status service uses `./gluetun-status/app.py` and runs a small flask app to get status info and build a simple webpage. You can insert this as an iframe on Homarr to see your VPN status.
 
-[![Gluetun Status](./images/gluetun-status.png)](./images/gluetun-status.png)
+![Gluetun Status](./images/gluetun-status.png)
 
 ## Misc Notes
 
