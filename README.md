@@ -1,9 +1,3 @@
-## URLs
-
-Access is all routed through traefik. This includes both subdomains and paths. So make sure your domain and subdomain all point back to the same IP. Many of the apps (Radarr, Sonarr, etc.) use the `HOSTNAME` value from `.env` followed by a the app name as a path. But some apps (Overseerr, Plex, etc.) have trouble because they don't have a base url environment variable. So those are set with their own full URLs. 
-
-I may try to work on the traefik routes later to get them all into paths.
-
 ## Gluetun Port Forwarding Sync
 
 To sync port forwarding from Gluetun to qbittorrent, the GSP=Qbittorrent-Gluetun-sync-port-mod is used (https://github.com/t-anc/GSP-Qbittorent-Gluetun-sync-port-mod).
@@ -17,6 +11,10 @@ To sync port forwarding from Gluetun to qbittorrent, the GSP=Qbittorrent-Gluetun
 the gluetun_status service uses `./gluetun-status/app.py` and runs a small flask app to get status info and build a simple webpage. You can insert this as an iframe on Homarr to see your VPN status.
 
 ![Gluetun Status](./images/gluetun-status.png)
+
+## URLs
+
+Access is all routed through traefik. This includes both subdomains and paths. So make sure your domain and subdomain all point back to the same IP. Many of the apps (Radarr, Sonarr, etc.) use the `HOSTNAME` value from `.env` followed by a the app name as a path. But some apps (Overseerr, Plex, etc.) have trouble because they don't have a base url environment variable. So those are set with their own full URLs.
 
 ## Misc Notes
 
