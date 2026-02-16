@@ -22,4 +22,3 @@ Access is all routed through traefik. This includes both subdomains and paths. S
 * All the *arr apps and download clients are behind the VPN. You can still access them through the traefik addresses. No ports need to be exposed on those containers.
 * First run will probably be an issue. After it is up, you will need to get into the various tools and get an API key to go into `.env` file. From there you can restart everything.
 * My setup uses ProtonVPN. If you use something different, look up the docs on Gluetun. And you'll need to customize the gluetun monitor (`./gluetun-status/app.py`).
-* For port forwarding across the VPN, you need to read the docs on http://ghcr.io/t-anc/gsp-qbittorent-gluetun-sync-port-mod:main. You will have to take some extra steps here. This mod allows auto-updating the port forwarding you need for the VPN.
