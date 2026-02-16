@@ -101,7 +101,7 @@ services:
       - traefik.http.services.radarr.loadbalancer.server.port=7878
       - traefik.docker.network=proxy_internal
   bazarr:
-    image: lscr.io/linuxserver/bazarr:v1.5.3-ls328
+    image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     environment:
       - PUID=${USER_ID}
@@ -618,7 +618,7 @@ services:
 
 networks:
   default:
-    name: docker-compose-nas
+    name: plex-stack
   proxy_internal:
-    name: docker-compose-nas_proxy_internal
+    name: plex-stack-internal
     driver: bridge
