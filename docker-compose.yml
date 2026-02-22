@@ -358,13 +358,6 @@ services:
       - ${DATA_ROOT}/abs/metadata:/metadata
     environment:
       - TZ=${TIMEZONE}
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.abs.rule=Host(`${ABS_URL}`)
-      - traefik.http.routers.abs.entrypoints=web-secure
-      - traefik.http.routers.abs.tls=true
-      - traefik.http.routers.abs.tls.certresolver=myresolver
-      - traefik.http.services.abs.loadbalancer.server.port=80
   seedboxapi:
     container_name: seedboxapi
     image: myanonamouse/seedboxapi
